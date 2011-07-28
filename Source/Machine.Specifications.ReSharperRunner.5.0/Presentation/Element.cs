@@ -11,12 +11,14 @@ using JetBrains.Util;
 
 namespace Machine.Specifications.ReSharperRunner.Presentation
 {
+
   internal abstract class Element : UnitTestElement
   {
     readonly string _declaringTypeName;
     readonly ProjectModelElementEnvoy _projectEnvoy;
 
     protected Element(IUnitTestProvider provider,
+
                       UnitTestElement parent,
                       ProjectModelElementEnvoy projectEnvoy,
                       string declaringTypeName,

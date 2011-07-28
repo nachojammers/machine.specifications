@@ -8,11 +8,10 @@ using JetBrains.ReSharper.UnitTestFramework;
 using JetBrains.Util;
 
 using Machine.Specifications.ReSharperRunner.Factories;
-using Machine.Specifications.ReSharperRunner.Presentation;
 
 namespace Machine.Specifications.ReSharperRunner.Explorers
 {
-  internal class AssemblyExplorer
+  class AssemblyExplorer
   {
     readonly IMetadataAssembly _assembly;
     readonly BehaviorFactory _behaviorFactory;
@@ -34,39 +33,50 @@ namespace Machine.Specifications.ReSharperRunner.Explorers
         var projectEnvoy = new ProjectModelElementEnvoy(project);
 
         var cache = new ContextCache();
-        _contextFactory = new ContextFactory(provider, projectEnvoy, _assembly.Location, cache);
-        _contextSpecificationFactory = new ContextSpecificationFactory(provider, projectEnvoy, cache);
-        _behaviorFactory = new BehaviorFactory(provider, projectEnvoy, cache);
-        _behaviorSpecificationFactory = new BehaviorSpecificationFactory(provider, projectEnvoy);
+#if RESHARPER_6
+        _contextFactory = new ContextFactory(provider, project, projectEnvoy, _assembly.Location.FullPath, cache);
+#else
+        _contextFactory = new ContextFactory(provider, project, projectEnvoy, _assembly.Location, cache);
+#endif
+        _contextSpecificationFactory = new ContextSpecificationFactory(provider, project, projectEnvoy, cache);
+        _behaviorFactory = new BehaviorFactory(provider, project, projectEnvoy, cache);
+        _behaviorSpecificationFactory = new BehaviorSpecificationFactory(provider, project, projectEnvoy);
       }
     }
 
     public void Explore()
     {
-      if (!_assembly.ReferencedAssembliesNames.Any(x => String.Equals(x.AssemblyName.Name,
-                                                                      typeof(It).Assembly.GetName().Name,
-                                                                      StringComparison.InvariantCultureIgnoreCase)))
+      if (!_assembly.ReferencedAssembliesNames.Any(x => String.Equals(
+#if RESHARPER_6
+                                                          x.Name,
+#else
+                                                          x.AssemblyName.Name,
+#endif
+                                                          typeof(It).Assembly.GetName().Name,
+                                                          StringComparison.InvariantCultureIgnoreCase)))
       {
         return;
       }
 
-      _assembly.GetTypes()
-        .Where(type => type.IsContext())
-        .ForEach(type =>
-          {
-            var contextElement = _contextFactory.CreateContext(type);
-            _consumer(contextElement);
+      _assembly.GetTypes().Where(type => type.IsContext()).ForEach(type =>
+      {
+        var contextElement = _contextFactory.CreateContext(type);
+        _consumer(contextElement);
 
-            type.GetSpecifications().ForEach(x => _consumer(_contextSpecificationFactory.CreateContextSpecification(contextElement, x)));
+        type
+          .GetSpecifications()
+          .ForEach(x => _consumer(_contextSpecificationFactory.CreateContextSpecification(contextElement, x)));
 
-            type.GetBehaviors().ForEach(x =>
-              {
-                BehaviorElement behaviorElement = _behaviorFactory.CreateBehavior(contextElement, x);
-                _consumer(behaviorElement);
+        type.GetBehaviors().ForEach(x =>
+        {
+          var behaviorElement = _behaviorFactory.CreateBehavior(contextElement, x);
+          _consumer(behaviorElement);
 
-                _behaviorSpecificationFactory.CreateBehaviorSpecificationsFromBehavior(behaviorElement, x).ForEach(y => _consumer(y));
-              });
-          });
+          _behaviorSpecificationFactory
+            .CreateBehaviorSpecificationsFromBehavior(behaviorElement, x)
+            .ForEach(y => _consumer(y));
+        });
+      });
     }
   }
 }

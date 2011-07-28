@@ -12,18 +12,21 @@ namespace Machine.Specifications.ReSharperRunner.Factories
   internal class BehaviorSpecificationFactory
   {
     readonly ProjectModelElementEnvoy _projectEnvoy;
-    readonly IUnitTestProvider _provider;
+    readonly MSpecUnitTestProvider _provider;
+    readonly IProject _project;
 
-    public BehaviorSpecificationFactory(IUnitTestProvider provider, ProjectModelElementEnvoy projectEnvoy)
+    public BehaviorSpecificationFactory(MSpecUnitTestProvider provider, IProject project, ProjectModelElementEnvoy projectEnvoy)
     {
       _provider = provider;
+      _project = project;
       _projectEnvoy = projectEnvoy;
     }
 
     BehaviorSpecificationElement CreateBehaviorSpecification(BehaviorElement behavior,
                                                              IMetadataField behaviorSpecification)
     {
-      return new BehaviorSpecificationElement(_provider,
+      return GetOrCreateBehaviorSpecification(_provider,
+                                              _project,
                                               behavior,
                                               _projectEnvoy,
                                               behavior.FullyQualifiedTypeName ?? behaviorSpecification.DeclaringType.FullyQualifiedName,
@@ -58,12 +61,38 @@ namespace Machine.Specifications.ReSharperRunner.Factories
     BehaviorSpecificationElement CreateBehaviorSpecification(BehaviorElement behavior,
                                                              IDeclaredElement behaviorSpecification)
     {
-      return new BehaviorSpecificationElement(_provider,
+      return GetOrCreateBehaviorSpecification(_provider,
+                                              _project,
                                               behavior,
                                               _projectEnvoy,
+#if RESHARPER_6
+                                              behavior.FullyQualifiedTypeName ?? ((ITypeMember)behaviorSpecification).GetContainingType().GetClrName().FullName,
+#else
                                               behavior.FullyQualifiedTypeName ?? behaviorSpecification.GetContainingType().CLRName,
-                                              behaviorSpecification.ShortName,
+#endif
+ behaviorSpecification.ShortName,
                                               behaviorSpecification.IsIgnored());
+    }
+
+    public static BehaviorSpecificationElement GetOrCreateBehaviorSpecification(MSpecUnitTestProvider provider, IProject project, BehaviorElement behavior, ProjectModelElementEnvoy projectEnvoy, string declaringTypeName, string fieldName, bool isIgnored)
+    {
+#if RESHARPER_6
+      var id = string.Format("{0}{1}.{2}", behavior.Id, declaringTypeName, fieldName);
+      var behaviorSpecification = provider.UnitTestManager.GetElementById(project, id) as BehaviorSpecificationElement;
+      if (behaviorSpecification != null)
+      {
+        behaviorSpecification.Parent = behavior;
+        behaviorSpecification.State = UnitTestElementState.Valid;
+        return behaviorSpecification;
+      }
+#endif
+
+      return new BehaviorSpecificationElement(provider,
+                                        behavior,
+                                        projectEnvoy,
+                                        declaringTypeName,
+                                        fieldName,
+                                        isIgnored);
     }
   }
 }

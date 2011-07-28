@@ -21,7 +21,7 @@ namespace Machine.Specifications.ReSharperRunner.Explorers
     readonly IFile _file;
     readonly CheckForInterrupt _interrupted;
 
-    public FileExplorer(IUnitTestProvider provider,
+    public FileExplorer(MSpecUnitTestProvider provider,
                         UnitTestElementLocationConsumer consumer,
                         IFile file,
                         CheckForInterrupt interrupted)
@@ -40,15 +40,19 @@ namespace Machine.Specifications.ReSharperRunner.Explorers
       _file = file;
       _interrupted = interrupted;
 
+#if RESHARPER_6
+      IProject project = file.GetSourceFile().ToProjectFile().GetProject();
+#else
       IProject project = file.ProjectFile.GetProject();
+#endif
       var projectEnvoy = new ProjectModelElementEnvoy(project);
       string assemblyPath = UnitTestManager.GetOutputAssemblyPath(project).FullPath;
 
       var cache = new ContextCache();
-      var contextFactory = new ContextFactory(provider, projectEnvoy, assemblyPath, cache);
-      var contextSpecificationFactory = new ContextSpecificationFactory(provider, projectEnvoy, cache);
-      var behaviorFactory = new BehaviorFactory(provider, projectEnvoy, cache);
-      var behaviorSpecificationFactory = new BehaviorSpecificationFactory(provider, projectEnvoy);
+      var contextFactory = new ContextFactory(provider, project, projectEnvoy, assemblyPath, cache);
+      var contextSpecificationFactory = new ContextSpecificationFactory(provider, project, projectEnvoy, cache);
+      var behaviorFactory = new BehaviorFactory(provider, project, projectEnvoy, cache);
+      var behaviorSpecificationFactory = new BehaviorSpecificationFactory(provider, project, projectEnvoy);
 
       _elementHandlers = new List<IElementHandler>
                          {
@@ -58,7 +62,11 @@ namespace Machine.Specifications.ReSharperRunner.Explorers
                          };
     }
 
+#if RESHARPER_6
+    public bool InteriorShouldBeProcessed(ITreeNode element)
+#else 
     public bool InteriorShouldBeProcessed(IElement element)
+#endif
     {
       if (element is ITypeMemberDeclaration)
       {
@@ -68,7 +76,11 @@ namespace Machine.Specifications.ReSharperRunner.Explorers
       return true;
     }
 
+#if RESHARPER_6
+    public void ProcessBeforeInterior(ITreeNode element)
+#else
     public void ProcessBeforeInterior(IElement element)
+#endif 
     {
       IElementHandler handler = _elementHandlers.Where(x => x.Accepts(element)).FirstOrDefault();
       if (handler == null)
@@ -85,9 +97,19 @@ namespace Machine.Specifications.ReSharperRunner.Explorers
       }
     }
 
+#if RESHARPER_6
+    public void ProcessAfterInterior(ITreeNode element)
+    {
+      _elementHandlers
+        .Where(x => x.Accepts(element))
+        .ToList()
+        .ForEach(x => x.Cleanup(element));
+    }
+#else
     public void ProcessAfterInterior(IElement element)
     {
     }
+#endif
 
     public bool ProcessingIsFinished
     {
