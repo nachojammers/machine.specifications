@@ -2,12 +2,12 @@
 
 namespace Machine.Specifications.ComparerStrategies
 {
-  class DefaultComparer<T> : IComparer<T>
-  {
-    public int Compare(T x, T y)
+    class DefaultComparer<T> : IComparer<T>
     {
-      // Last case, rely on Object.Equals
-      return Equals(x, y) ? 0 : -1;
+        public int Compare(T x, T y)
+        {
+            // Last case, rely on Object.Equals
+            return object.Equals(x, y) ? 0 : -1;
+        }
     }
-  }
 }

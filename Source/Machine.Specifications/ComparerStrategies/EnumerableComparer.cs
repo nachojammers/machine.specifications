@@ -2,35 +2,32 @@
 
 namespace Machine.Specifications.ComparerStrategies
 {
-  class EnumerableComparer<T> : IComparerStrategy<T>
-  {
-    public ComparisionResult Compare(T x, T y)
+    class EnumerableComparer<T> : IComparerStrategy<T>
     {
-      var enumerableX = x as IEnumerable;
-      var enumerableY = y as IEnumerable;
-
-      if (enumerableX != null && enumerableY != null)
-      {
-        var enumeratorX = enumerableX.GetEnumerator();
-        var enumeratorY = enumerableY.GetEnumerator();
-
-        while (true)
+        public ComparisionResult Compare(T x, T y)
         {
-          var hasNextX = enumeratorX.MoveNext();
-          var hasNextY = enumeratorY.MoveNext();
+            // Enumerable?
+            var enumerableX = x as IEnumerable;
+            var enumerableY = y as IEnumerable;
 
-          if (!hasNextX || !hasNextY)
-          {
-            return new ComparisionResult(hasNextX == hasNextY ? 0 : -1);
-          }
+            if (enumerableX != null && enumerableY != null)
+            {
+                IEnumerator enumeratorX = enumerableX.GetEnumerator();
+                IEnumerator enumeratorY = enumerableY.GetEnumerator();
 
-          if (!Equals(enumeratorX.Current, enumeratorY.Current))
-          {
-            return new ComparisionResult(-1);
-          }
+                while (true)
+                {
+                    bool hasNextX = enumeratorX.MoveNext();
+                    bool hasNextY = enumeratorY.MoveNext();
+
+                    if (!hasNextX || !hasNextY)
+                        return new ComparisionResult(hasNextX == hasNextY ? 0 : -1);
+
+                    if (!object.Equals(enumeratorX.Current, enumeratorY.Current))
+                        return new ComparisionResult(-1);
+                }
+            }
+            return new NoResult();
         }
-      }
-      return new NoResult();
     }
-  }
 }

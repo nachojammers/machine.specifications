@@ -1,10 +1,10 @@
 ﻿namespace Machine.Specifications.ComparerStrategies
 {
-  static class ObjectExtension
-  {
-    public static bool IsEqualToDefault<T>(this T obj)
+    public static class ObjectExtension
     {
-      return Equals(obj, default(T));
+        public static bool IsEqualToDefault<T>(this T obj)
+        {
+            return object.Equals(obj, default(T));
+        }
     }
-  }
 }

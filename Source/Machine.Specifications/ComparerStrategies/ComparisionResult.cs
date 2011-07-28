@@ -1,18 +1,18 @@
 ﻿namespace Machine.Specifications.ComparerStrategies
 {
-  class ComparisionResult
-  {
-    public ComparisionResult(int result)
+    public class ComparisionResult
     {
-      FoundResult = true;
-      Result = result;
-    }
+        public bool FoundResult { get; set; }
+        public int Result { get; set; }
 
-    protected ComparisionResult()
-    {
-    }
+        public ComparisionResult(int result)
+        {
+            this.FoundResult = true;
+            this.Result = result;
+        }
 
-    public bool FoundResult { get; protected set; }
-    public int Result { get; private set; }
-  }
+        protected ComparisionResult()
+        {
+        }
+    }
 }

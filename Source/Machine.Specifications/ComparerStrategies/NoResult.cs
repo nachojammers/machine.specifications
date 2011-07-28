@@ -1,10 +1,10 @@
 ﻿namespace Machine.Specifications.ComparerStrategies
 {
-  class NoResult : ComparisionResult
-  {
-    public NoResult()
+    public class NoResult : ComparisionResult
     {
-      FoundResult = false;
+        public NoResult() : base()
+        {
+            this.FoundResult = false;
+        }
     }
-  }
 }
